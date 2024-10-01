@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title></title>
+	<link rel="stylesheet" href="/static/pico.min.css" />
+</head>
+
+<body>
+	<div class="container">
+		<h1>Location Logger</h1>
+		<table>
+			<thead>
+				<tr>
+					<th>Name</th>
+					<th>Value</th>
+				</tr>
+			</thead>
+			<tbody>
+				<tr>
+					<td>Latitude</td>
+					<td id="value-latitude"></td>
+				</tr>
+				<tr>
+					<td>Longitude</td>
+					<td id="value-longitude"></td>
+				</tr>
+				<tr>
+					<td>Heading</td>
+					<td id="value-heading"></td>
+				</tr>
+			</tbody>
+		</table>
+		<div class="grid">
+			<button id="log" type="button">Log</button>
+		</div>
+		<progress id="progress" />
+	</div>
+
+	<script>
+		const logger_state = {
+			latitude: 0,
+			longitude: 0,
+			accuracy: 0,
+			timestamp: 0,
+			heading: 0,
+			permissions: false,
+			inprogress: false,
+		};
+
+		function start() {
+		}
+
+		async function log_post() {
+			try {
+				const response = await fetch("/api/location", {
+					method: "POST",
+					body: JSON.stringify({
+						timestamp: logger_state.timestamp / 1000.0, // millis to seconds
+						latitude: logger_state.latitude,
+						longitude: logger_state.longitude,
+						accuracy: logger_state.accuracy,
+						heading: logger_state.heading,
+					}),
+				});
+				const response_body = await response.text();
+				if (response.status != 200) {
+					alert(`post failed\nstatus = ${response.status}\n${response_body}`);
+				}
+			} catch (err) {
+				alert(`post failed: ${err}`);
+			}
+
+			logger_state.inprogress = false;
+			update_ui();
+		}
+
+		function request_permissions() {
+			if (DeviceOrientationEvent.requestPermission) {
+				DeviceOrientationEvent.requestPermission().then(() => {
+					window.addEventListener("deviceorientation", (event) => {
+						logger_state.heading = event.webkitCompassHeading;
+						update_ui();
+					});
+					logger_state.permissions = true;
+					log();
+				}).catch((err) => {
+					alert(`failed to get device orientation permissions: ${err}`)
+				})
+			}
+		}
+
+		function log() {
+			if (logger_state.inprogress)
+				return;
+
+			logger_state.latitude = null;
+			logger_state.longitude = null;
+			logger_state.accuracy = null;
+			logger_state.timestamp = null;
+			update_ui();
+
+			if (!logger_state.permissions) {
+				request_permissions();
+				return;
+			}
+
+			navigator.geolocation.getCurrentPosition((position) => {
+				console.log(position);
+				logger_state.latitude = position.coords.latitude;
+				logger_state.longitude = position.coords.longitude;
+				logger_state.accuracy = position.coords.accuracy;
+				logger_state.timestamp = position.timestamp;
+				update_ui();
+				log_post();
+			}, (err) => {
+				alert(`failed to get position: ${err}`);
+			});
+
+			logger_state.inprogress = true;
+			update_ui();
+		}
+
+		function update_ui() {
+			set_table_value("value-latitude", logger_state.latitude);
+			set_table_value("value-longitude", logger_state.longitude);
+			set_table_value("value-heading", logger_state.heading);
+
+			const progress_display = logger_state.inprogress ? "block" : "none";
+			document.getElementById("progress").style.display = progress_display;
+		}
+
+		function set_table_value(id, value) {
+			document.getElementById(id).innerHTML = value;
+		}
+
+		function main() {
+			document.getElementById("log").onclick = log;
+			update_ui();
+		}
+
+		window.addEventListener("load", main);
+	</script>
+</body>
+
+</html>

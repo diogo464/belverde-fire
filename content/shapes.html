@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>Edit points</title>
+	<link rel="stylesheet" href="/static/leaflet.css" />
+	<script src="/static/leaflet.js"></script>
+	<script src="/static/main.js"></script>
+</head>
+
+<body>
+	<div id="container">
+		<div id="sidepanel">
+			<button id="shape-create" type="button">Create shape</button>
+			<button id="shape-delete" type="button">Delete shape</button>
+			<button id="shape-kind-unburned" type="button">Shape Unburned</button>
+			<button id="shape-kind-burned" type="button">Shape Burned</button>
+			<button id="shapes-update" type="button">Update Shapes</button>
+		</div>
+		<div id="map"></div>
+	</div>
+</body>
+
+<style>
+	body {
+		margin: 0;
+		padding: 0;
+	}
+
+	#container {
+		display: grid;
+		width: 100vw;
+		height: 100vh;
+		gap: 0px 0px;
+		grid-template-rows: 1fr;
+		grid-template-columns: 1fr 3fr;
+		grid-template-areas: "side map";
+	}
+
+	#sidepanel {
+		display: flex;
+		flex-direction: column;
+		width: 100%;
+		height: 100%;
+		grid-area: "side";
+	}
+
+	#map {
+		width: 100%;
+		height: 100%;
+		grid-area: "map";
+	}
+
+	img {
+		max-height: 100%;
+		max-width: 100%;
+	}
+
+	.image-holder {
+		height: 300px;
+		width: 300px;
+	}
+</style>
+
+<script>
+	window.addEventListener("load", () => page_shape__main())
+</script>
+
+</html>
