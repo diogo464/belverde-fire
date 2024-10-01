@@ -19,6 +19,11 @@ import (
 	"github.com/pkg/errors"
 )
 
+const (
+	ENV_VAR_HTTP_USERNAME = "HTTP_USERNAME"
+	ENV_VAR_HTTP_PASSWORD = "HTTP_PASSWORD"
+)
+
 type LocationLog struct {
 	Timestamp float64 `json:"timestamp"`
 	Latitude  float64 `json:"latitude"`
@@ -220,8 +225,8 @@ func handlePostApiShapes(w http.ResponseWriter, r *http.Request) {
 func requireBasicAuth(h http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		username, password, ok := r.BasicAuth()
-		required_username := os.Getenv("HTTP_USERNAME")
-		required_password := os.Getenv("HTTP_PASSWORD")
+		required_username := os.Getenv(ENV_VAR_HTTP_USERNAME)
+		required_password := os.Getenv(ENV_VAR_HTTP_PASSWORD)
 		if !ok || username != required_username || password != required_password {
 			w.Header().Add("WWW-Authenticate", "Basic realm=\"User Visible Realm\"")
 			http.Error(w, "invalid authentication", http.StatusUnauthorized)
@@ -253,6 +258,10 @@ func main() {
 	fs, err := fs.Sub(contentFs, "content")
 	if err != nil {
 		log.Fatal(err)
+	}
+
+	if os.Getenv(ENV_VAR_HTTP_USERNAME) == "" || os.Getenv(ENV_VAR_HTTP_PASSWORD) == "" {
+		log.Fatalf("http username and password cannot be empty")
 	}
 
 	http.HandleFunc("GET /api/location", handleGetApiLog)
