@@ -300,9 +300,12 @@ function page_shape__ui_shape_add(state, shape) {
 	if (positions.length >= 3) {
 		const opacity = state.selected_shape == shape ? 0.2 : 0.04;
 		const select = () => page_shape__ui_shape_select(state, shape);
-		const poly = L.polygon(positions, { color: color, fillOpacity: opacity, bubblingMouseEvents: false })
-			.on('click', (e) => { if (e.originalEvent.shiftKey) { select(); } })
-			.on('dblclick', select)
+		const poly = L.polygon(positions, { color: color, fillOpacity: opacity })
+			.on('click', (ev) => { if (ev.originalEvent.shiftKey) { L.DomEvent.stopPropagation(ev); select(); } })
+			.on('dblclick', (ev) => {
+				L.DomEvent.stopPropagation(ev);
+				select();
+			})
 			.addTo(state.map);
 		shape.layers.push(poly);
 	}
