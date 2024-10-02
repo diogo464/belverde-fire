@@ -299,10 +299,10 @@ function page_shape__ui_shape_add(state, shape) {
 
 	if (positions.length >= 3) {
 		const opacity = state.selected_shape == shape ? 0.2 : 0.04;
+		const select = () => page_shape__ui_shape_select(state, shape);
 		const poly = L.polygon(positions, { color: color, fillOpacity: opacity, bubblingMouseEvents: false })
-			.on('click', () => {
-				page_shape__ui_shape_select(state, shape);
-			})
+			.on('click', (e) => { if (e.originalEvent.shiftKey) { select(); } })
+			.on('dblclick', select)
 			.addTo(state.map);
 		shape.layers.push(poly);
 	}
