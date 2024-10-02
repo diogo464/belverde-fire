@@ -4,6 +4,7 @@ const DEFAULT_COORDINATES = [38.59104623572979, -9.130882470026634];
 const ELEM_ID_MAP = "map";
 const ELEM_ID_BTN_SHAPE_CREATE = "shape-create";
 const ELEM_ID_BTN_SHAPE_DELETE = "shape-delete";
+const ELEM_ID_BTN_SHAPE_DELETE_VERTEX = "shape-delete-vertex";
 const ELEM_ID_BTN_SHAPE_BURNED = "shape-kind-burned";
 const ELEM_ID_BTN_SHAPE_UNBURNED = "shape-kind-unburned";
 const ELEM_ID_BTN_SHAPES_UPDATE = "shapes-update";
@@ -40,8 +41,7 @@ const SHAPE_KIND_BURNED = "burned";
 	* @typedef {Object} Shape
 	* @property {string} kind
 	* @property {[]ShapePoint} points
-	* @property {Object} poly					- leaflet polygon, null if points.length < 3
-	* @property {[]Object} poly_points			- leaflet circles for each point
+	* @property {[]Object} layers				- leaflet layers
 	* @property {number} point_insert_idx		- index to start inserting points
 */
 
@@ -130,8 +130,7 @@ function lib_shape_create_empty() {
 	return {
 		kind: SHAPE_KIND_UNBURNED,
 		points: [],
-		poly: null,
-		poly_points: [],
+		layers: [],
 		point_insert_idx: 0,
 	};
 }
@@ -140,8 +139,7 @@ function lib_shape_create_from_descriptor(desc) {
 	return {
 		kind: desc.kind,
 		points: desc.points,
-		poly: null,
-		poly_points: [],
+		layers: [],
 		point_insert_idx: desc.points.length,
 	};
 }
@@ -158,6 +156,12 @@ function page_shape__on_shape_delete(state) {
 	page_shape__ui_shape_remove(state, state.selected_shape);
 	state.shapes.splice(state.shapes.indexOf(state.selected_shape), 1);
 	state.selected_shape = null;
+}
+
+function page_shape__on_shape_delete_vertex(state) {
+	if (state.delete_selected_vertex_fn == null)
+		return;
+	state.delete_selected_vertex_fn();
 }
 
 function page_shape__on_shape_kind_unburned(state) {
@@ -221,6 +225,7 @@ function page_shape__on_map_click(state, ev) {
 function page_shape__setup_handlers(state) {
 	lib_setup_handler_onclick(ELEM_ID_BTN_SHAPE_CREATE, () => page_shape__on_shape_create(state));
 	lib_setup_handler_onclick(ELEM_ID_BTN_SHAPE_DELETE, () => page_shape__on_shape_delete(state));
+	lib_setup_handler_onclick(ELEM_ID_BTN_SHAPE_DELETE_VERTEX, () => page_shape__on_shape_delete_vertex(state));
 	lib_setup_handler_onclick(ELEM_ID_BTN_SHAPE_UNBURNED, () => page_shape__on_shape_kind_unburned(state));
 	lib_setup_handler_onclick(ELEM_ID_BTN_SHAPE_BURNED, () => page_shape__on_shape_kind_burned(state));
 	lib_setup_handler_onclick(ELEM_ID_BTN_SHAPES_UPDATE, () => page_shape__on_shapes_update(state));
@@ -229,16 +234,11 @@ function page_shape__setup_handlers(state) {
 }
 
 function page_shape__ui_shape_remove(state, shape) {
-	for (const circle of shape.poly_points) {
-		state.map.removeLayer(circle);
+	for (const layer of shape.layers) {
+		state.map.removeLayer(layer);
+		layer.remove();
 	}
-	shape.poly_points = [];
-
-	if (shape.poly != null) {
-		state.map.removeLayer(shape.poly);
-		shape.poly.remove();
-		shape.poly = null;
-	}
+	shape.layers = [];
 }
 
 function page_shape__ui_shape_select(state, shape) {
@@ -252,41 +252,59 @@ function page_shape__ui_shape_select(state, shape) {
 function page_shape__ui_shape_add(state, shape) {
 	page_shape__ui_shape_remove(state, shape);
 
+	const selected = state.selected_shape == shape;
 	const color = lib_shape_color_for_kind(shape.kind);
 	const positions = [];
 	for (var i = 0; i < shape.points.length; i += 1) {
 		const point = shape.points[i];
-		const highlight_point = shape.point_insert_idx - 1 == i;
+		const highlight_point = (shape.point_insert_idx - 1 == i) && selected;
 		const coords = [point.latitude, point.longitude];
 		const circle_color = highlight_point ? 'blue' : 'red';
 		const circle_idx = i;
 		console.assert(point.latitude != null, "invalid point latitude")
 		console.assert(point.longitude != null, "invalid point longitude")
 
+		const remove_circle = () => {
+			shape.points.splice(circle_idx, 1);
+			shape.point_insert_idx = circle_idx;
+			page_shape__ui_shape_add(state, shape);
+		};
+		const update_insert_idx = () => {
+			shape.point_insert_idx = circle_idx + 1;
+			page_shape__ui_shape_add(state, shape);
+		};
+
+		if (highlight_point)
+			state.delete_selected_vertex_fn = remove_circle;
+
 		positions.push(coords);
 		const circle = L.circle(coords, { radius: 15, color: circle_color, bubblingMouseEvents: false })
 			.on('click', (e) => {
 				if (e.originalEvent.shiftKey) {
-					shape.points.splice(circle_idx, 1);
-					shape.point_insert_idx = circle_idx;
-					page_shape__ui_shape_add(state, shape);
+					remove_circle();
 				} else {
-					console.log(`clicked on circle, setting point insert idx to ${circle_idx + 1}`);
-					shape.point_insert_idx = circle_idx + 1;
-					page_shape__ui_shape_add(state, shape);
+					update_insert_idx();
 				}
 			})
+			.on('contextmenu', () => remove_circle())
 			.addTo(state.map);
-		shape.poly_points.push(circle);
+		shape.layers.push(circle);
+
+		if (selected) {
+			const tooltip = L.tooltip(coords, { content: `${i}` })
+				.addTo(state.map);
+			shape.layers.push(tooltip);
+		}
 	}
 
 	if (positions.length >= 3) {
 		const opacity = state.selected_shape == shape ? 0.2 : 0.04;
-		shape.poly = L.polygon(positions, { color: color, fillOpacity: opacity, bubblingMouseEvents: false })
+		const poly = L.polygon(positions, { color: color, fillOpacity: opacity, bubblingMouseEvents: false })
 			.on('click', () => {
 				page_shape__ui_shape_select(state, shape);
 			})
 			.addTo(state.map);
+		shape.layers.push(poly);
 	}
 }
 
@@ -300,6 +318,7 @@ async function page_shape__main() {
 		locations: locations,
 		shapes: [],
 		selected_shape: null,
+		delete_selected_vertex_fn: null,
 	};
 	window.state = state; // to allow access from the console
 
