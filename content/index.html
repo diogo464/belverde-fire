@@ -25,69 +25,27 @@
 		height: 100vh;
 	}
 
-	img {
-		max-height: 100%;
-		max-width: 100%;
+	#image-frame {
+		display: flex;
+		justify-content: center;
+		width: 100vw;
+		height: 100vh;
+		position: fixed;
+		z-index: 400;
+		top: 0;
+		left: 0;
+		background: rgba(0, 0, 0, 0.5);
 	}
 
-	.image-holder {
-		height: 300px;
-		width: 300px;
+	#image-frame>img {
+		display: block;
+		margin: auto;
+		max-height: 90vh;
+		max-width: 90vw;
 	}
 </style>
 
 <script>
-	// const burned = [
-	// 	[38.592177702929426, -9.145557060034113],
-	// 	[38.58385651421202, -9.134116290522673],
-	// 	[38.587516574932266, -9.134999747627804],
-	// 	[38.59442184182009, -9.13809184749576],
-	// 	[38.596734957715675, -9.138621921758839],
-	// ];
-	//
-	// const unburned = [
-	// 	[38.598388277527036, -9.135874396116632],
-	// 	[38.589731317901276, -9.149692038446165],
-	// 	[38.58043902375093, -9.138619879692945],
-	// 	[38.591568658478, -9.12070962376425],
-	// ];
-	//
-	// const photo = [38.59428333333334, -9.127433333333334];
-	//
-	// function addLine(map, point, bearing) {
-	// 	const len = 0.0002;
-	// 	const lat = Math.sin((bearing + 90) * 2 * Math.PI / 360) * len;
-	// 	const lon = Math.cos((bearing + 90) * 2 * Math.PI / 360) * len;
-	// 	const coords = [
-	// 		[point[0], point[1]],
-	// 		[point[0] + lat, point[1] + lon],
-	// 	];
-	// 	L.polyline(coords, {color: 'blue'}).addTo(map)
-	// }
-	//
-	// function main() {
-	// 	var map = L.map('map').setView([38.59104623572979, -9.130882470026634], 14);
-	// 	L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-	// 		maxZoom: 19,
-	// 		attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-	// 	}).addTo(map);
-	// 	var polygon = L.polygon(unburned, {color: 'green'}).addTo(map);
-	// 	var polygon = L.polygon(burned, {color: 'red'}).addTo(map);
-	// 	//var polyline = L.polyline(latlngs, {color: 'red'}).addTo(map);
-	// 	const test = [38.58989148093167, -9.138004507064645];
-	// 	addLine(map, test, 0);
-	// 	var marker = L.marker(photo).on('click', () => console.log("clicked the image marker")).addTo(map);
-	// 	marker.bindPopup("<div class='image-holder'><img src='/img.jpg' /></div>");
-	// 	//L.circle(test, {radius: 5.9}).on('click', (e) => console.log(`clicked circle, shift = ${e.originalEvent.shiftKey}`)).addTo(map)
-	// 	L.circle(test, {radius: 5.9}).on('click', (e) => {
-	// 		if (e.originalEvent.shiftKey) {
-	// 			console.log("reloaded")
-	// 			map.remove()
-	// 			main()
-	// 		}
-	// 	}).addTo(map);
-	// }
-
 	window.addEventListener("load", () => page_index__main());
 </script>
 

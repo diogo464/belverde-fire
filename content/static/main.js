@@ -14,7 +14,7 @@ const SHAPE_KIND_BURNED = "burned";
 
 /**
 	* A location log
-	* @typedef {Object} LocationLog
+	* @typedef {Object} LocationMarker
 	* @property {number} timestamp
 	* @property {number} latitude
 	* @property {number} longitude
@@ -37,6 +37,14 @@ const SHAPE_KIND_BURNED = "burned";
 */
 
 /**
+	* A picture descriptor
+	* @typedef {Object} PictureDescriptor
+	* @property {string} filename
+	* @property {number} latitude
+	* @property {number} longitude
+*/
+
+/**
 	* A shape
 	* @typedef {Object} Shape
 	* @property {string} kind
@@ -51,6 +59,7 @@ function lib_setup_handler_onclick(elementId, handler) {
 
 function lib_setup_map() {
 	var map = L.map(ELEM_ID_MAP).setView(DEFAULT_COORDINATES, DEFAULT_ZOOM);
+	L.Icon.Default.imagePath = "/static/";
 	L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
 		maxZoom: 19,
 		attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
@@ -60,7 +69,7 @@ function lib_setup_map() {
 
 /**
 	* Fetch location logs
-	* @return {Promise<LocationLog[]>}
+	* @return {Promise<LocationMarker[]>}
 */
 async function lib_fetch_location_logs() {
 	// const burned = [
@@ -96,12 +105,26 @@ async function lib_fetch_location_logs() {
 }
 
 /**
-	* Fetch location logs
+	* Fetch shape descriptors
 	* @return {Promise<ShapeDescriptor[]>}
 */
 async function lib_fetch_shape_descriptors() {
 	const response = await fetch("/api/shapes");
 	return response.json();
+}
+
+/**
+	* Fetch picture descriptors
+	* @return {Promise<PictureDescriptor[]>}
+*/
+async function lib_fetch_picture_descriptors() {
+	const response = await fetch("/api/pictures");
+	return response.json();
+}
+
+function lib_picture_descriptor_url(picture_descriptor) {
+	const picture_url = `/picture/${picture_descriptor.filename}`
+	return picture_url;
 }
 
 function lib_add_location_logs_to_map(map, locations) {
@@ -335,7 +358,7 @@ async function page_shape__main() {
 	}
 }
 
-function page_main__poly_create_from_shape_descriptor(map, shape_descriptor) {
+function page_index__poly_create_from_shape_descriptor(map, shape_descriptor) {
 	const color = lib_shape_color_for_kind(shape_descriptor.kind);
 	const points = []
 	for (const point of shape_descriptor.points) {
@@ -344,10 +367,46 @@ function page_main__poly_create_from_shape_descriptor(map, shape_descriptor) {
 	L.polygon(points, { color: color }).addTo(map);
 }
 
+function page_index__create_image_popup(picture_descriptor) {
+	const e = document.getElementById("image-frame");
+	if (e != null)
+		e.remove();
+
+	const d = document.createElement("div");
+	d.id = "image-frame";
+	const i = document.createElement("img");
+	i.src = lib_picture_descriptor_url(picture_descriptor);
+
+	d.onclick = () => {
+		d.remove();
+	};
+
+	d.appendChild(i);
+	document.body.appendChild(d);
+}
+
+function page_index__add_picture_descriptor_to_map(map, picture_descriptor) {
+	L.marker([picture_descriptor.latitude, picture_descriptor.longitude])
+		.on('click', () => {
+			page_index__create_image_popup(picture_descriptor);
+		})
+		.addTo(map)
+}
+
 async function page_index__main() {
 	const map = lib_setup_map();
-	const shape_descriptors = await lib_fetch_shape_descriptors();
+	const [shape_descriptors, picture_descriptors] = await Promise.all([
+		lib_fetch_shape_descriptors(),
+		lib_fetch_picture_descriptors(),
+	]);
 	for (const descriptor of shape_descriptors) {
-		page_main__poly_create_from_shape_descriptor(map, descriptor);
+		page_index__poly_create_from_shape_descriptor(map, descriptor);
 	}
+	for (const descriptor of picture_descriptors) {
+		page_index__add_picture_descriptor_to_map(map, descriptor);
+	}
+
+	setTimeout(() => {
+		console.log("create div");
+	}, 1000);
 }

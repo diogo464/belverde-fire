@@ -28,6 +28,10 @@
 					<td id="value-longitude"></td>
 				</tr>
 				<tr>
+					<td>Accuracy</td>
+					<td id="value-accuracy"></td>
+				</tr>
+				<tr>
 					<td>Heading</td>
 					<td id="value-heading"></td>
 				</tr>
@@ -46,7 +50,7 @@
 			accuracy: 0,
 			timestamp: 0,
 			heading: 0,
-			permissions: false,
+			setup: false,
 			inprogress: false,
 		};
 
@@ -77,55 +81,52 @@
 			update_ui();
 		}
 
-		function request_permissions() {
+		function logger_setup() {
 			if (DeviceOrientationEvent.requestPermission) {
 				DeviceOrientationEvent.requestPermission().then(() => {
 					window.addEventListener("deviceorientation", (event) => {
 						logger_state.heading = event.webkitCompassHeading;
 						update_ui();
 					});
-					logger_state.permissions = true;
 					log();
 				}).catch((err) => {
 					alert(`failed to get device orientation permissions: ${err}`)
 				})
 			}
-		}
 
-		function log() {
-			if (logger_state.inprogress)
-				return;
-
-			logger_state.latitude = null;
-			logger_state.longitude = null;
-			logger_state.accuracy = null;
-			logger_state.timestamp = null;
-			update_ui();
-
-			if (!logger_state.permissions) {
-				request_permissions();
-				return;
-			}
-
-			navigator.geolocation.getCurrentPosition((position) => {
+			navigator.geolocation.watchPosition((position) => {
 				console.log(position);
 				logger_state.latitude = position.coords.latitude;
 				logger_state.longitude = position.coords.longitude;
 				logger_state.accuracy = position.coords.accuracy;
 				logger_state.timestamp = position.timestamp;
 				update_ui();
-				log_post();
 			}, (err) => {
 				alert(`failed to get position: ${err}`);
-			});
+			}, {enableHighAccuracy: true});
+
+
+			logger_state.setup = true;
+		}
+
+		function log() {
+			if (logger_state.inprogress)
+				return;
+
+			if (!logger_state.setup) {
+				logger_setup();
+				return;
+			}
 
 			logger_state.inprogress = true;
+			log_post();
 			update_ui();
 		}
 
 		function update_ui() {
 			set_table_value("value-latitude", logger_state.latitude);
 			set_table_value("value-longitude", logger_state.longitude);
+			set_table_value("value-accuracy", logger_state.accuracy);
 			set_table_value("value-heading", logger_state.heading);
 
 			const progress_display = logger_state.inprogress ? "block" : "none";

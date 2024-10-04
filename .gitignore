@@ -1,2 +1,7 @@
 *.db
 belverde-fire
+pictures/
+*.png
+*.HEIC
+*.jpg
+*.jpeg
