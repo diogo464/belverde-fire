@@ -350,6 +350,7 @@ func (a *App) updatePictures() {
 			if err := magickConvert(filePath, filePathNew); err != nil {
 				log.Printf("failed to convert image: %v", err)
 			}
+			continue
 		}
 
 		// process file
