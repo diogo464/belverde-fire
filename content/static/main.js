@@ -61,7 +61,8 @@ function lib_setup_map() {
 	var map = L.map(ELEM_ID_MAP).setView(DEFAULT_COORDINATES, DEFAULT_ZOOM);
 	L.Icon.Default.imagePath = "/static/";
 	L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-		maxZoom: 19,
+		maxNativeZoom: 19,
+		maxZoom: 25,
 		attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
 	}).addTo(map);
 	return map;
