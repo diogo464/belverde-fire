@@ -132,12 +132,14 @@ function lib_add_location_logs_to_map(map, locations) {
 	for (const location of locations) {
 		const len = 0.0002;
 		const lat = Math.sin((location.heading + 90) * 2 * Math.PI / 360) * len;
-		const lon = Math.cos((location.heading + 90) * 2 * Math.PI / 360) * len;
+		const lon = Math.cos((location.heading - 90) * 2 * Math.PI / 360) * len;
 		const line_coords = [
 			[location.latitude, location.longitude],
 			[location.latitude + lat, location.longitude + lon],
 		];
-		L.circle([location.latitude, location.longitude], { radius: location.accuracy }).addTo(map);
+		L.circle([location.latitude, location.longitude], { radius: location.accuracy })
+			.bindPopup(`${location.heading}`)
+			.addTo(map);
 		L.polyline(line_coords, { color: 'blue' }).addTo(map)
 	}
 }
