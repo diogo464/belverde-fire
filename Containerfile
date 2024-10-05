@@ -1,5 +1,6 @@
-FROM debian:bookworm-slim
-RUN apt update && apt install -y sqlite3 imagemagick exiftool && apt-get clean
+FROM archlinux:latest
+RUN pacman -Syu --noconfirm sqlite3 imagemagick perl-image-exiftool libheif
+ENV PATH="$PATH:/usr/bin/vendor_perl"
 WORKDIR /app/data
 COPY belverde-fire /app/belverde-fire
 ENTRYPOINT ["/app/belverde-fire"]
