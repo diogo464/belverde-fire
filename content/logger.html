@@ -35,6 +35,12 @@
 					<td>Heading</td>
 					<td id="value-heading"></td>
 				</tr>
+				<tr>
+					<td>Vibrate</td>
+					<td>
+						<input id="input-vibrate" type="checkbox" name="vibrate" value="false">
+					</td>
+				</tr>
 			</tbody>
 		</table>
 		<div class="grid">
@@ -119,6 +125,9 @@
 			}
 
 			logger_state.inprogress = true;
+			if (document.getElementById("input-vibrate").checked) {
+				navigator.vibrate(200);
+			}
 			log_post();
 			update_ui();
 		}

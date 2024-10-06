@@ -170,41 +170,41 @@ function lib_shape_create_from_descriptor(desc) {
 	};
 }
 
-function page_shape__on_shape_create(state) {
+function page_editor__on_shape_create(state) {
 	const shape = lib_shape_create_empty();
 	state.shapes.push(shape);
-	page_shape__ui_shape_select(state, shape);
+	page_editor__ui_shape_select(state, shape);
 }
 
-function page_shape__on_shape_delete(state) {
+function page_editor__on_shape_delete(state) {
 	if (state.selected_shape == null)
 		return;
-	page_shape__ui_shape_remove(state, state.selected_shape);
+	page_editor__ui_shape_remove(state, state.selected_shape);
 	state.shapes.splice(state.shapes.indexOf(state.selected_shape), 1);
 	state.selected_shape = null;
 }
 
-function page_shape__on_shape_delete_vertex(state) {
+function page_editor__on_shape_delete_vertex(state) {
 	if (state.delete_selected_vertex_fn == null)
 		return;
 	state.delete_selected_vertex_fn();
 }
 
-function page_shape__on_shape_kind_unburned(state) {
+function page_editor__on_shape_kind_unburned(state) {
 	if (state.selected_shape == null)
 		return;
 	state.selected_shape.kind = SHAPE_KIND_UNBURNED;
-	page_shape__ui_shape_add(state, state.selected_shape);
+	page_editor__ui_shape_add(state, state.selected_shape);
 }
 
-function page_shape__on_shape_kind_burned(state) {
+function page_editor__on_shape_kind_burned(state) {
 	if (state.selected_shape == null)
 		return;
 	state.selected_shape.kind = SHAPE_KIND_BURNED;
-	page_shape__ui_shape_add(state, state.selected_shape);
+	page_editor__ui_shape_add(state, state.selected_shape);
 }
 
-function page_shape__on_shapes_update(state) {
+function page_editor__on_shapes_update(state) {
 	const shape_descriptors = [];
 	for (const shape of state.shapes) {
 		if (shape.points.length < 3)
@@ -236,7 +236,7 @@ function page_shape__on_shapes_update(state) {
 	});
 }
 
-function page_shape__on_map_click(state, ev) {
+function page_editor__on_map_click(state, ev) {
 	console.log("clicked on map");
 	if (state.selected_shape == null)
 		return;
@@ -245,21 +245,23 @@ function page_shape__on_map_click(state, ev) {
 		longitude: ev.latlng.lng,
 	});
 	state.selected_shape.point_insert_idx += 1;
-	page_shape__ui_shape_add(state, state.selected_shape);
+	page_editor__ui_shape_add(state, state.selected_shape);
 }
 
-function page_shape__setup_handlers(state) {
-	lib_setup_handler_onclick(ELEM_ID_BTN_SHAPE_CREATE, () => page_shape__on_shape_create(state));
-	lib_setup_handler_onclick(ELEM_ID_BTN_SHAPE_DELETE, () => page_shape__on_shape_delete(state));
-	lib_setup_handler_onclick(ELEM_ID_BTN_SHAPE_DELETE_VERTEX, () => page_shape__on_shape_delete_vertex(state));
-	lib_setup_handler_onclick(ELEM_ID_BTN_SHAPE_UNBURNED, () => page_shape__on_shape_kind_unburned(state));
-	lib_setup_handler_onclick(ELEM_ID_BTN_SHAPE_BURNED, () => page_shape__on_shape_kind_burned(state));
-	lib_setup_handler_onclick(ELEM_ID_BTN_SHAPES_UPDATE, () => page_shape__on_shapes_update(state));
+function page_editor__setup_handlers(state) {
+	lib_setup_handler_onclick(ELEM_ID_BTN_SHAPE_CREATE, () => page_editor__on_shape_create(state));
+	lib_setup_handler_onclick(ELEM_ID_BTN_SHAPE_DELETE, () => page_editor__on_shape_delete(state));
+	lib_setup_handler_onclick(ELEM_ID_BTN_SHAPE_DELETE_VERTEX, () => page_editor__on_shape_delete_vertex(state));
+	lib_setup_handler_onclick(ELEM_ID_BTN_SHAPE_UNBURNED, () => page_editor__on_shape_kind_unburned(state));
+	lib_setup_handler_onclick(ELEM_ID_BTN_SHAPE_BURNED, () => page_editor__on_shape_kind_burned(state));
+	lib_setup_handler_onclick(ELEM_ID_BTN_SHAPES_UPDATE, () => page_editor__on_shapes_update(state));
 
-	state.map.on('click', (ev) => page_shape__on_map_click(state, ev));
+	state.map.on('click', (ev) => page_editor__on_map_click(state, ev));
 }
 
-function page_shape__ui_shape_remove(state, shape) {
+function page_editor__ui_shape_remove(state, shape) {
+	if (shape == null)
+		return;
 	for (const layer of shape.layers) {
 		state.map.removeLayer(layer);
 		layer.remove();
@@ -267,16 +269,19 @@ function page_shape__ui_shape_remove(state, shape) {
 	shape.layers = [];
 }
 
-function page_shape__ui_shape_select(state, shape) {
+function page_editor__ui_shape_select(state, shape) {
 	const prev_shape = state.selected_shape;
 	state.selected_shape = shape;
-	page_shape__ui_shape_add(state, shape);
+	page_editor__ui_shape_add(state, shape);
 	if (prev_shape != null)
-		page_shape__ui_shape_add(state, prev_shape);
+		page_editor__ui_shape_add(state, prev_shape);
 }
 
-function page_shape__ui_shape_add(state, shape) {
-	page_shape__ui_shape_remove(state, shape);
+function page_editor__ui_shape_add(state, shape) {
+	if (shape == null)
+		return;
+
+	page_editor__ui_shape_remove(state, shape);
 
 	const selected = state.selected_shape == shape;
 	const color = lib_shape_color_for_kind(shape.kind);
@@ -293,18 +298,18 @@ function page_shape__ui_shape_add(state, shape) {
 		const remove_circle = () => {
 			shape.points.splice(circle_idx, 1);
 			shape.point_insert_idx = circle_idx;
-			page_shape__ui_shape_add(state, shape);
+			page_editor__ui_shape_add(state, shape);
 		};
 		const update_insert_idx = () => {
 			shape.point_insert_idx = circle_idx + 1;
-			page_shape__ui_shape_add(state, shape);
+			page_editor__ui_shape_add(state, shape);
 		};
 
 		if (highlight_point)
 			state.delete_selected_vertex_fn = remove_circle;
 
 		positions.push(coords);
-		const circle = L.circle(coords, { radius: 15, color: circle_color, bubblingMouseEvents: false })
+		const circle = L.circle(coords, { radius: state.vertex_radius, color: circle_color, bubblingMouseEvents: false })
 			.on('click', (e) => {
 				if (e.originalEvent.shiftKey) {
 					remove_circle();
@@ -325,7 +330,7 @@ function page_shape__ui_shape_add(state, shape) {
 
 	if (positions.length >= 3) {
 		const opacity = state.selected_shape == shape ? 0.2 : 0.04;
-		const select = () => page_shape__ui_shape_select(state, shape);
+		const select = () => page_editor__ui_shape_select(state, shape);
 		const poly = L.polygon(positions, { color: color, fillOpacity: opacity })
 			.on('click', (ev) => { if (ev.originalEvent.shiftKey) { L.DomEvent.stopPropagation(ev); select(); } })
 			.on('dblclick', (ev) => {
@@ -337,7 +342,7 @@ function page_shape__ui_shape_add(state, shape) {
 	}
 }
 
-async function page_shape__main() {
+async function page_editor__main() {
 	const map = lib_setup_map();
 	const locations = await lib_fetch_location_logs();
 	const shape_descriptors = await lib_fetch_shape_descriptors();
@@ -348,16 +353,23 @@ async function page_shape__main() {
 		shapes: [],
 		selected_shape: null,
 		delete_selected_vertex_fn: null,
+		vertex_radius: 15,
 	};
 	window.state = state; // to allow access from the console
 
-	page_shape__setup_handlers(state);
+	page_editor__setup_handlers(state);
 	lib_add_location_logs_to_map(state.map, state.locations);
+
+	const vertex_radius_slider = document.getElementById("shape-vertex-radius");
+	vertex_radius_slider.addEventListener("change", () => {
+		state.vertex_radius = vertex_radius_slider.value;
+		page_editor__ui_shape_add(state, state.selected_shape);
+	});
 
 	for (const descriptor of shape_descriptors) {
 		const shape = lib_shape_create_from_descriptor(descriptor);
 		state.shapes.push(shape);
-		page_shape__ui_shape_add(state, shape);
+		page_editor__ui_shape_add(state, shape);
 	}
 }
 
